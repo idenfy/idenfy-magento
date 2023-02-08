@@ -1,0 +1,22 @@
+{
+    "name": "idenfy/module-customer-verification",
+    "version": "1.0.0",
+    "description": "Plugin that uses the Idenfy API to verify customers",
+    "type": "magento2-module",
+    "require": {
+        "magento/framework": "*",
+        "magento/module-checkout": "100.4.*",
+        "magento/module-customer": "103.0.*"
+    },
+    "license": [
+        "Proprietary"
+    ],
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Idenfy\\CustomerVerification\\": ""
+        }
+    }
+}
