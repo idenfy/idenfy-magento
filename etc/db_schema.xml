@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="idenfy_verification" resource="default" engine="innodb"
+           comment="Verification records for the idenfy API">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true"
+                comment="Internal ID of the verification record"/>
+        <column xsi:type="int" name="customer_id" unsigned="true" nullable="true" identity="false"
+                comment="The Magneto customer's ID"/>
+        <column xsi:type="varchar" name="scan_reference" nullable="false"
+                comment="A unique string identifying a client verification on iDenfy’s side"/>
+        <column xsi:type="varchar" name="auth_token" nullable="false"
+                comment="A unique string for verification process"/>
+        <column xsi:type="varchar" name="client_id" nullable="false" comment="A unique string identifying a client"/>
+        <column xsi:type="varchar" name="digit_string" nullable="true"
+                comment="A unique string identifying the token that can be used by the client in Idenfy's mobile application"/>
+        <column xsi:type="varchar" name="verification_data" nullable="true"
+                comment="Encrypted customer data which was used for the verification request"/>
+        <column xsi:type="varchar" name="message" nullable="true"
+                comment="The response message received from the Idenfy API"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="IDENFY_VERIFICATION_CUSTOMER_ID_CUSTOMER_ENTITY_ENTITY_ID"
+                    table="idenfy_verification" column="customer_id" referenceTable="customer_entity"
+                    referenceColumn="entity_id" onDelete="NO ACTION"/>
+        <index referenceId="IDENFY_VERIFICATION_ENTITY_ID" indexType="btree">
+            <column name="entity_id"/>
+        </index>
+    </table>
+</schema>

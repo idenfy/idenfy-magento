@@ -1,0 +1,19 @@
+{
+    "idenfy_verification": {
+        "column": {
+            "entity_id": true,
+            "customer_id": true,
+            "scan_reference": true,
+            "auth_token": true,
+            "client_id": true,
+            "digit_string": true
+        },
+        "index": {
+            "IDENFY_VERIFICATION_ENTITY_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "IDENFY_VERIFICATION_CUSTOMER_ID_CUSTOMER_ENTITY_ENTITY_ID": true
+        }
+    }
+}

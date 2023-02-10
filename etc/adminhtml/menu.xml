@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Idenfy_CustomerVerification::idenfy_management" module="Idenfy_CustomerVerification"
+             resource="Idenfy_CustomerVerification::idenfy_management" sortOrder="50" title="Idenfy"/>
+        <add id="Idenfy_CustomerVerification::listing" sortOrder="10" title="Idenfy Customer Verification"
+             module="Idenfy_CustomerVerification" parent="Idenfy_CustomerVerification::idenfy_management"
+             resource="Idenfy_CustomerVerification::listing" translate="title" action="idenfy/verification/overview"/>
+    </menu>
+</config>

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <idenfy>
+            <general>
+                <api_secret backend_model="Magento\Config\Model\Config\Backend\Encrypted"/>
+                <api_base_url>https://ivs.idenfy.com/api/v2</api_base_url>
+            </general>
+        </idenfy>
+    </default>
+</config>

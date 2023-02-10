@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Idenfy\CustomerVerification\Api\Data\VerificationInterface"
+                type="Idenfy\CustomerVerification\Model\Verification"/>
+    <preference for="Idenfy\CustomerVerification\Api\VerificationRepositoryInterface"
+                type="Idenfy\CustomerVerification\Model\VerificationRepository"/>
+
+    <virtualType name="VerificationDataProvider"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="resourceModel" xsi:type="string">
+                Idenfy\CustomerVerification\Model\ResourceModel\Verification\Collection
+            </argument>
+            <argument name="mainTable" xsi:type="string">idenfy_verification</argument>
+        </arguments>
+    </virtualType>
+
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections"  xsi:type="array">
+                <item xsi:type="string" name="idenfy_customer_verifications_data_source">VerificationDataProvider</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <virtualType name="IdenfyLoggerHandler" type="Magento\Framework\Logger\Handler\Base">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+            <argument name="fileName" xsi:type="string">/var/log/idenfy.log</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="IdenfyLogger" type="Magento\Framework\Logger\Monolog">
+        <arguments>
+            <argument name="name" xsi:type="string">Idenfy Logger</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="system" xsi:type="object">IdenfyLoggerHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <type name="Idenfy\CustomerVerification\Observer\VerifyCustomer">
+        <arguments>
+            <argument name="logger" xsi:type="object">IdenfyLogger</argument>
+        </arguments>
+    </type>
+</config>
