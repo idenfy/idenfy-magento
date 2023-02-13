@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Idenfy\CustomerVerification\Observer;
+namespace Idenfy\CustomerVerification\Model\Action;
 
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\RequestOptions;
@@ -9,19 +9,16 @@ use Idenfy\CustomerVerification\Api\Data\VerificationInterface;
 use Idenfy\CustomerVerification\Api\Data\VerificationInterfaceFactory;
 use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
 use Idenfy\CustomerVerification\Model\IdenfyClientFactory;
-use Magento\Framework\Event\ObserverInterface;
-use Magento\Framework\Event\Observer;
+use InvalidArgumentException;
 use Magento\Framework\Exception\AlreadyExistsException;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Serialize\Serializer\Json;
+use Magento\Framework\UrlInterface;
 use Magento\Quote\Api\Data\CartInterface;
-use Magento\Sales\Api\Data\OrderInterface;
 use Psr\Log\LoggerInterface;
 
-class VerifyCustomer implements ObserverInterface
+class GetAuthToken
 {
-
     /** @var IdenfyClientFactory  */
     private IdenfyClientFactory $idenfyClientFactory;
 
@@ -34,6 +31,15 @@ class VerifyCustomer implements ObserverInterface
     /** @var VerificationRepositoryInterface  */
     private VerificationRepositoryInterface $verificationRepository;
 
+    /** @var CheckCustomerVerification  */
+    private CheckCustomerVerification $checkCustomerVerification;
+
+    /** @var GetClientId  */
+    private GetClientId $getClientId;
+
+    /** @var UrlInterface  */
+    private UrlInterface $urlBuilder;
+
     /** @var LoggerInterface  */
     private LoggerInterface $logger;
 
@@ -42,6 +48,9 @@ class VerifyCustomer implements ObserverInterface
      * @param Json $jsonSerializer
      * @param VerificationInterfaceFactory $verificationFactory
      * @param VerificationRepositoryInterface $verificationRepository
+     * @param CheckCustomerVerification $checkCustomerVerification
+     * @param GetClientId $getClientId
+     * @param UrlInterface $urlBuilder
      * @param LoggerInterface $logger
      */
     public function __construct(
@@ -49,47 +58,44 @@ class VerifyCustomer implements ObserverInterface
         Json $jsonSerializer,
         VerificationInterfaceFactory $verificationFactory,
         VerificationRepositoryInterface $verificationRepository,
+        CheckCustomerVerification $checkCustomerVerification,
+        GetClientId $getClientId,
+        UrlInterface $urlBuilder,
         LoggerInterface $logger
     ) {
         $this->idenfyClientFactory = $idenfyClientFactory;
         $this->jsonSerializer = $jsonSerializer;
         $this->verificationFactory = $verificationFactory;
         $this->verificationRepository = $verificationRepository;
+        $this->checkCustomerVerification = $checkCustomerVerification;
+        $this->getClientId = $getClientId;
+        $this->urlBuilder = $urlBuilder;
         $this->logger = $logger;
     }
 
     /**
-     * @param Observer $observer
-     * @return void
+     * @param CartInterface $quote
+     * @return VerificationInterface|null
      */
-    public function execute(Observer $observer)
+    public function execute(CartInterface $quote): ?VerificationInterface
     {
-        /** @var OrderInterface $order */
-        $order = $observer->getEvent()->getOrder();
+        $clientId = $this->getClientId->execute($quote);
 
-        /** @var CartInterface $quote */
-        $quote = $observer->getEvent()->getQuote();
-
-        $customerId = (int) $order->getCustomerId();
-        $clientId = $this->getClientId($order, $quote);
-
-        if ($this->isCustomerVerified($customerId, $clientId)) {
+        if ($this->checkCustomerVerification->execute($clientId)) {
             $this->logger->info(
-                sprintf('Customer with id %s already verified. Skipping verification.', $customerId)
+                sprintf('Verification for client ID %s already successful. Skipping verification.', $clientId)
             );
-            return;
+            return null;
         }
 
         try {
             $idenfyClient = $this->idenfyClientFactory->create();
         } catch (LocalizedException $e) {
             $this->logger->error(sprintf('Unable to verify customer: %s', $e->getMessage()));
-            return;
+            return null;
         }
 
-        $payload = [
-            'clientId' => $clientId
-        ];
+        $payload = $this->getPayload($clientId);
 
         try {
             $response = $idenfyClient->post(
@@ -101,79 +107,66 @@ class VerifyCustomer implements ObserverInterface
             );
         } catch (GuzzleException $e) {
             $this->logger->error(sprintf('Unable to verify customer: %s', $e->getMessage()));
-            return;
+            return null;
         }
 
         try {
             $response = $this->jsonSerializer->unserialize($response->getBody()->getContents());
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             $this->logger->error(sprintf('Unable to process Idenfy API response: %s', $e->getMessage()));
-            return;
+            return null;
         }
 
-        $this->createVerificationRecord($response, $order, $clientId, $payload);
+        return $this->createVerificationRecord($response, $quote, $clientId, $payload);
     }
 
     /**
-     * @param OrderInterface $order
+     * @param mixed $response
      * @param CartInterface $quote
-     * @return string
+     * @param string $clientId
+     * @param array $payload
+     * @return VerificationInterface|null
      */
-    private function getClientId(OrderInterface $order, CartInterface $quote): string
-    {
-        if (!$order->getCustomerIsGuest()) {
-            return (string) $order->getCustomerId();
-        }
-
-        $customerIdentifier = 'guest-';
-        $customerIdentifier .= strtolower($order->getCustomerFirstname());
-        $customerIdentifier .= '-';
-        $customerIdentifier .= strtolower($order->getCustomerLastname());
-
-        return preg_replace('/\s+/', '-', $customerIdentifier);
-    }
-
     private function createVerificationRecord(
         mixed $response,
-        OrderInterface $order,
+        CartInterface $quote,
         string $clientId,
         array $payload
-    ): void {
+    ): ?VerificationInterface {
+
         $verification = $this->verificationFactory->create();
 
-        $verification->setCustomerId($order->getCustomerId() ? (int) $order->getCustomerId() : null);
+        $verification->setCustomerId($quote->getCustomerId() ? (int) $quote->getCustomerId() : null);
         $verification->setVerificationData($this->jsonSerializer->serialize($payload));
         $verification->setClientId($clientId);
-        $verification->setResponse($response['message']);
         $verification->setAuthToken($response['authToken']);
         $verification->setScanReference($response['scanRef']);
         $verification->setDigitString($response['digitString']);
         $verification->setMessage($response['message']);
 
         try {
-            $this->verificationRepository->save($verification);
+            return $this->verificationRepository->save($verification);
         } catch (AlreadyExistsException $e) {
             $this->logger->error(sprintf('Unable to store verification record: %s', $e->getMessage()));
+            return null;
         }
     }
 
     /**
-     * @param int $customerId
      * @param string $clientId
-     * @return bool
+     * @return array
      */
-    private function isCustomerVerified(int $customerId, string $clientId): bool
+    private function getPayload(string $clientId): array
     {
-        try {
-            if ($customerId) {
-                $this->verificationRepository->getByCustomerId($customerId);
-            } else {
-                $this->verificationRepository->getByClientId($clientId);
-            }
-        } catch (NoSuchEntityException $e) {
-            return false;
-        }
+        $redirectUrl = $this->urlBuilder->getUrl('checkout', ['_secure' => true]);
+        $webhookUrl = $this->urlBuilder->getUrl('idenfy/verification/process', ['_secure' => true]);
 
-        return true;
+        return [
+            'clientId' => $clientId,
+            'successUrl' => $redirectUrl,
+            'errorUrl' => $redirectUrl,
+            'unverifiedUrl' => $redirectUrl,
+            'callbackUrl' => $webhookUrl
+        ];
     }
 }

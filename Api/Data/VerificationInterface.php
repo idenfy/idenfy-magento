@@ -9,6 +9,7 @@ interface VerificationInterface
      * String constants for property names
      */
     public const ENTITY_ID = 'entity_id';
+    public const IS_VERIFIED = 'is_verified';
     public const CUSTOMER_ID = 'customer_id';
     public const AUTH_TOKEN = 'auth_token';
     public const SCAN_REFERENCE = 'scan_reference';
@@ -93,4 +94,15 @@ interface VerificationInterface
      * @return void
      */
     public function setMessage(string $message): void;
+
+    /**
+     * @return bool
+     */
+    public function getIsVerified(): bool;
+
+    /**
+     * @param bool $isVerified
+     * @return void
+     */
+    public function setIsVerified(bool $isVerified): void;
 }

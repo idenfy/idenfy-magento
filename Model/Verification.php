@@ -143,4 +143,21 @@ class Verification extends AbstractModel implements VerificationInterface
     {
         $this->setData(self::MESSAGE, $message);
     }
+
+    /**
+     * @return bool
+     */
+    public function getIsVerified(): bool
+    {
+        return $this->getData(self::IS_VERIFIED);
+    }
+
+    /**
+     * @param bool $isVerified
+     * @return void
+     */
+    public function setIsVerified(bool $isVerified): void
+    {
+        $this->setData(self::IS_VERIFIED, $isVerified);
+    }
 }

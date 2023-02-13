@@ -5,6 +5,8 @@
            comment="Verification records for the idenfy API">
         <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true"
                 comment="Internal ID of the verification record"/>
+        <column xsi:type="boolean" name="is_verified" nullable="false" default="false"
+                comment="Wether or not the customer is verified"/>
         <column xsi:type="int" name="customer_id" unsigned="true" nullable="true" identity="false"
                 comment="The Magneto customer's ID"/>
         <column xsi:type="varchar" name="scan_reference" nullable="false"
