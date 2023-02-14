@@ -1,0 +1,9 @@
+<div id="idenfy-verification">
+    <p data-bind="i18n: 'You need to verify with Idenfy before you can continue with the checkout.'"></p>
+    <button class="action primary" type="button" data-bind="
+                        click: idenfyRedirect,
+                        attr: {title: $t('Start Verification')}
+                        " title="Start Verification" data-ol-has-click-handler="">
+        <span data-bind="i18n: 'Start Verification'">Start Verification</span>
+    </button>
+</div>

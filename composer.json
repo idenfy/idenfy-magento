@@ -1,22 +1,22 @@
 {
-  "name": "idenfy/module-customer-verification",
-  "version": "1.0.0",
-  "description": "Plugin which is used to verify customers using the Idenfy API",
-  "type": "magento2-module",
-  "require": {
-    "magento/framework": "*",
-    "magento/module-checkout": "100.4.*",
-    "magento/module-customer": "103.0.*"
-  },
-  "license": [
-    "Massachusetts Institute of Technology License (MITL)"
-  ],
-  "autoload": {
-    "files": [
-      "registration.php"
+    "name": "idenfy/module-customer-verification",
+    "version": "1.0.1",
+    "description": "Plugin which is used to verify customers using the Idenfy API",
+    "type": "magento2-module",
+    "require": {
+        "magento/framework": "*",
+        "magento/module-checkout": "100.4.*",
+        "magento/module-customer": "103.0.*"
+    },
+    "license": [
+        "Massachusetts Institute of Technology License (MITL)"
     ],
-    "psr-4": {
-      "Idenfy\\CustomerVerification\\": ""
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Idenfy\\CustomerVerification\\": ""
+        }
     }
-  }
 }
