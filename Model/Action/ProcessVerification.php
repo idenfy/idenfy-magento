@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-namespace Idenfy\CustomerVerification\Controller\Verification;
+namespace Idenfy\CustomerVerification\Model\Action;
 
 use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
-use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\Request\Http;
-use Magento\Framework\Controller\Result\JsonFactory as JsonResultFactory;
+use Magento\Framework\Exception\AlreadyExistsException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\Serialize\Serializer\Json;
 use Psr\Log\LoggerInterface;
 
-class Process implements HttpPostActionInterface
+class ProcessVerification
 {
     public const VERIFICATION_STATUS_KEY = 'status';
     public const VERIFICATION_OVERALL_STATUS_KEY = 'overall';
@@ -24,8 +24,8 @@ class Process implements HttpPostActionInterface
     /** @var VerificationRepositoryInterface */
     private VerificationRepositoryInterface $verificationRepository;
 
-    /** @var JsonResultFactory */
-    private JsonResultFactory $jsonResultFactory;
+    /** @var Json */
+    private Json $jsonSerializer;
 
     /** @var LoggerInterface */
     private LoggerInterface $logger;
@@ -33,34 +33,40 @@ class Process implements HttpPostActionInterface
     /**
      * @param Http $request
      * @param VerificationRepositoryInterface $verificationRepository
-     * @param JsonResultFactory $jsonResultFactory
+     * @param Json $jsonSerializer
      * @param LoggerInterface $logger
      */
     public function __construct(
         Http $request,
         VerificationRepositoryInterface $verificationRepository,
-        JsonResultFactory $jsonResultFactory,
+        Json $jsonSerializer,
         LoggerInterface $logger
     ) {
         $this->request = $request;
         $this->verificationRepository = $verificationRepository;
-        $this->jsonResultFactory = $jsonResultFactory;
+        $this->jsonSerializer = $jsonSerializer;
         $this->logger = $logger;
     }
 
-    public function execute()
+    /**
+     * @return string[]
+     * @throws AlreadyExistsException
+     */
+    public function execute(): array
     {
-        $result = $this->jsonResultFactory->create();
-        $result->setHttpResponseCode(200);
+        $result = ['status' => 'OK'];
 
-        $clientId = $this->request->getPostValue(self::VERIFICATION_CLIENT_ID_KEY);
-        $verificationStatus = $this->request->getPostValue(self::VERIFICATION_STATUS_KEY);
+        $requestData = $this->jsonSerializer->unserialize($this->request->getContent());
+
+        $clientId = $requestData[self::VERIFICATION_CLIENT_ID_KEY] ?? null;
+        $verificationStatus = $requestData[self::VERIFICATION_STATUS_KEY] ?? null;
 
         if (!$clientId || !$verificationStatus || !isset($verificationStatus[self::VERIFICATION_OVERALL_STATUS_KEY])) {
             $this->logger->error(
                 'Unable to process webhook, unable to retrieve clientID and/or status',
                 self::LOGGER_CONTEXT
             );
+            $result['status'] = 'ERROR';
             return $result;
         }
 
@@ -71,6 +77,7 @@ class Process implements HttpPostActionInterface
                 sprintf('Unable to process webhook, no verification record for clientID %s found', $clientId),
                 self::LOGGER_CONTEXT
             );
+            $result['status'] = 'ERROR';
             return $result;
         }
 

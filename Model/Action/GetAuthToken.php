@@ -158,8 +158,8 @@ class GetAuthToken
      */
     private function getPayload(string $clientId): array
     {
-        $redirectUrl = $this->urlBuilder->getUrl('checkout', ['_secure' => true]);
-        $webhookUrl = $this->urlBuilder->getUrl('idenfy/verification/process', ['_secure' => true]);
+        $redirectUrl = rtrim($this->urlBuilder->getUrl('checkout/#payment', ['_secure' => true]), '/');
+        $webhookUrl = $this->urlBuilder->getUrl('rest/default/V1/idenfy/process-verification', ['_secure' => true]);
 
         return [
             'clientId' => $clientId,

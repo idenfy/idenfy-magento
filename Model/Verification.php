@@ -149,7 +149,7 @@ class Verification extends AbstractModel implements VerificationInterface
      */
     public function getIsVerified(): bool
     {
-        return $this->getData(self::IS_VERIFIED);
+        return (bool) $this->getData(self::IS_VERIFIED);
     }
 
     /**

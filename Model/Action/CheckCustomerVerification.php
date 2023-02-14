@@ -31,6 +31,6 @@ class CheckCustomerVerification
             return false;
         }
 
-        return $verification->isVerified();
+        return $verification->getIsVerified();
     }
 }

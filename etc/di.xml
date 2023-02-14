@@ -38,7 +38,12 @@
             </argument>
         </arguments>
     </virtualType>
-    <type name="Idenfy\CustomerVerification\Observer\VerifyCustomer">
+    <type name="Idenfy\CustomerVerification\Model\Action\GetAuthToken">
+        <arguments>
+            <argument name="logger" xsi:type="object">IdenfyLogger</argument>
+        </arguments>
+    </type>
+    <type name="Idenfy\CustomerVerification\Model\Action\ProcessVerification">
         <arguments>
             <argument name="logger" xsi:type="object">IdenfyLogger</argument>
         </arguments>

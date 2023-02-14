@@ -18,11 +18,6 @@ class GetClientId
             return (string) $quote->getCustomerId();
         }
 
-        $customerIdentifier = 'guest-';
-        $customerIdentifier .= strtolower($quote->getCustomerFirstname());
-        $customerIdentifier .= '-';
-        $customerIdentifier .= strtolower($quote->getCustomerLastname());
-
-        return preg_replace('/\s+/', '-', $customerIdentifier);
+        return 'guest-' . $quote->getEntityId();
     }
 }

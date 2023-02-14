@@ -5,13 +5,11 @@ namespace Idenfy\customerVerification\Model\Action;
 
 use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
 use Idenfy\CustomerVerification\Model\Action\GetClientId;
-use Idenfy\CustomerVerification\Model\Action\GetAuthToken;
-use Idenfy\CustomerVerification\Model\Config;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 
-class GetRedirectUrl
+class NeedsVerification
 {
 
     /** @var CheckoutSession  */
@@ -20,58 +18,46 @@ class GetRedirectUrl
     /** @var GetClientId  */
     private GetClientId $getClientId;
 
-    /** @var GetAuthToken  */
-    private GetAuthToken $getAuthToken;
+    /**
+     * @param CheckoutSession $checkoutSession
+     * @param GetClientId $getClientId
+     * @param VerificationRepositoryInterface $verificationRepository
+     */
+    public function __construct(
+        GetClientId $getClientId,
+        VerificationRepositoryInterface $verificationRepository,
+        CheckoutSession $checkoutSession
+    ) {
+        $this->checkoutSession = $checkoutSession;
+        $this->getClientId = $getClientId;
+        $this->verificationRepository = $verificationRepository;
+    }
 
     /** @var VerificationRepositoryInterface  */
     private VerificationRepositoryInterface $verificationRepository;
 
-    /** @var Config  */
-    private Config $config;
-
     /**
-     * @param CheckoutSession $checkoutSession
-     * @param GetClientId $getClientId
-     * @param GetAuthToken $getAuthToken
-     * @param VerificationRepositoryInterface $verificationRepository
-     * @param Config $config
+     * @return bool
      */
-    public function __construct(
-        CheckoutSession $checkoutSession,
-        GetClientId $getClientId,
-        GetAuthToken $getAuthToken,
-        VerificationRepositoryInterface $verificationRepository,
-        Config $config
-    ) {
-        $this->checkoutSession = $checkoutSession;
-        $this->getClientId = $getClientId;
-        $this->getAuthToken = $getAuthToken;
-        $this->verificationRepository = $verificationRepository;
-        $this->config = $config;
-    }
-
-    /**
-     * @return string
-     * @throws LocalizedException
-     */
-    public function execute(): string
+    public function execute(): bool
     {
-        $quote = $this->checkoutSession->getQuote();
+        try {
+            $quote = $this->checkoutSession->getQuote();
+        } catch (NoSuchEntityException|LocalizedException $e) {
+            return false;
+        }
+
         $clientId = $this->getClientId->execute($quote);
 
         try {
             $verification = $this->verificationRepository->getByClientId($clientId);
         } catch (NoSuchEntityException $e) {
-            $verification = $this->getAuthToken->execute($quote);
+            return true;
         }
 
-        if ($verification === null) {
-            throw new LocalizedException(__('Unable to start verification. Please try again.'));
-        }
+        $isVerified = $verification->getIsVerified();
 
-        $baseUrl = $this->config->getApiBaseUrl();
-
-        return $baseUrl . '/redirect?authToken=' . $verification->getAuthToken();
+        return !$isVerified;
 
     }
 }
