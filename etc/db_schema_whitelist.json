@@ -6,7 +6,10 @@
             "scan_reference": true,
             "auth_token": true,
             "client_id": true,
-            "digit_string": true
+            "digit_string": true,
+            "is_verified": true,
+            "verification_data": true,
+            "message": true
         },
         "index": {
             "IDENFY_VERIFICATION_ENTITY_ID": true
