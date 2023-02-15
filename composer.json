@@ -1,6 +1,6 @@
 {
     "name": "idenfy/module-customer-verification",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Plugin which is used to verify customers using the Idenfy API",
     "type": "magento2-module",
     "require": {

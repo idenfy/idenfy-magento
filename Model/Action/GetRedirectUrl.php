@@ -10,6 +10,7 @@ use Idenfy\CustomerVerification\Model\Config;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Quote\Api\Data\CartInterface;
 
 class GetRedirectUrl
 {
@@ -57,13 +58,10 @@ class GetRedirectUrl
     public function execute(): string
     {
         $quote = $this->checkoutSession->getQuote();
-        $clientId = $this->getClientId->execute($quote);
 
-        try {
-            $verification = $this->verificationRepository->getByClientId($clientId);
-        } catch (NoSuchEntityException $e) {
-            $verification = $this->getAuthToken->execute($quote);
-        }
+        $this->cleanExistingVerification($quote);
+
+        $verification = $this->getAuthToken->execute($quote);
 
         if ($verification === null) {
             throw new LocalizedException(__('Unable to start verification. Please try again.'));
@@ -73,5 +71,21 @@ class GetRedirectUrl
 
         return $baseUrl . '/redirect?authToken=' . $verification->getAuthToken();
 
+    }
+
+    /**
+     * @param CartInterface $quote
+     * @return void
+     */
+    private function cleanExistingVerification(CartInterface $quote): void
+    {
+        $clientId = $this->getClientId->execute($quote);
+        try {
+            $verification = $this->verificationRepository->getByClientId($clientId);
+        } catch (NoSuchEntityException $e) {
+            return;
+        }
+
+        $this->verificationRepository->delete($verification);
     }
 }
