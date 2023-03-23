@@ -4,9 +4,10 @@ define([
     'ko',
     'mage/storage',
     'Magento_Ui/js/model/messageList',
+    'Magento_Checkout/js/model/url-builder',
     'Magento_Checkout/js/model/full-screen-loader',
     'mage/translate'
-], function ($, Component, ko, storage, messageList, fullScreenLoader, $t) {
+], function ($, Component, ko, storage, messageList, urlBuilder, fullScreenLoader, $t) {
     'use strict';
 
     return Component.extend({
@@ -39,11 +40,13 @@ define([
          * Check if the customer should still verify
          */
         shouldVerify: function () {
-            let status = undefined
-                self = this;
+            let self = this,
+                status = undefined,
+                serviceUrl = urlBuilder.createUrl('/idenfy/needs-verification', {});
+
             fullScreenLoader.startLoader();
             storage.post(
-                'rest/default/V1/idenfy/needs-verification'
+                serviceUrl
             ).fail(
                 function (response) {
                     self.shouldRender(false);
@@ -64,10 +67,11 @@ define([
          */
         idenfyRedirect: function () {
 
+            let serviceUrl = urlBuilder.createUrl('/idenfy/get-redirect-url', {});
             fullScreenLoader.startLoader();
 
             storage.post(
-                'rest/default/V1/idenfy/get-redirect-url'
+                serviceUrl
             ).fail(
                 function (response) {
                     messageList.addErrorMessage(
