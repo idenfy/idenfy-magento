@@ -15,6 +15,7 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Framework\UrlInterface;
 use Magento\Quote\Api\Data\CartInterface;
+use Magento\Store\Model\Argument\Interpreter\ServiceUrl;
 use Psr\Log\LoggerInterface;
 
 class GetAuthToken
@@ -40,6 +41,9 @@ class GetAuthToken
     /** @var UrlInterface  */
     private UrlInterface $urlBuilder;
 
+    /** @var ServiceUrl  */
+    private ServiceUrl $serviceUrlBuilder;
+
     /** @var LoggerInterface  */
     private LoggerInterface $logger;
 
@@ -51,6 +55,7 @@ class GetAuthToken
      * @param CheckCustomerVerification $checkCustomerVerification
      * @param GetClientId $getClientId
      * @param UrlInterface $urlBuilder
+     * @param ServiceUrl $serviceUrlBuilder
      * @param LoggerInterface $logger
      */
     public function __construct(
@@ -61,6 +66,7 @@ class GetAuthToken
         CheckCustomerVerification $checkCustomerVerification,
         GetClientId $getClientId,
         UrlInterface $urlBuilder,
+        ServiceUrl $serviceUrlBuilder,
         LoggerInterface $logger
     ) {
         $this->idenfyClientFactory = $idenfyClientFactory;
@@ -70,6 +76,7 @@ class GetAuthToken
         $this->checkCustomerVerification = $checkCustomerVerification;
         $this->getClientId = $getClientId;
         $this->urlBuilder = $urlBuilder;
+        $this->serviceUrlBuilder = $serviceUrlBuilder;
         $this->logger = $logger;
     }
 
@@ -159,7 +166,7 @@ class GetAuthToken
     private function getPayload(string $clientId): array
     {
         $redirectUrl = rtrim($this->urlBuilder->getUrl('checkout/#payment', ['_secure' => true]), '/');
-        $webhookUrl = $this->urlBuilder->getUrl('rest/default/V1/idenfy/process-verification', ['_secure' => true]);
+        $webhookUrl = $this->serviceUrlBuilder->evaluate(['path' => '/idenfy/process-verification']);
 
         return [
             'clientId' => $clientId,
