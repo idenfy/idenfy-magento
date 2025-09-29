@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Idenfy\customerVerification\Model\Action;
 
 use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
-use Idenfy\CustomerVerification\Model\Action\GetClientId;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -58,6 +57,5 @@ class NeedsVerification
         $isVerified = $verification->getIsVerified();
 
         return !$isVerified;
-
     }
 }

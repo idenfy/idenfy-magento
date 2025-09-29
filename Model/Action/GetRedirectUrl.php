@@ -4,8 +4,6 @@ declare(strict_types=1);
 namespace Idenfy\customerVerification\Model\Action;
 
 use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
-use Idenfy\CustomerVerification\Model\Action\GetClientId;
-use Idenfy\CustomerVerification\Model\Action\GetAuthToken;
 use Idenfy\CustomerVerification\Model\Config;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Exception\LocalizedException;
@@ -70,7 +68,6 @@ class GetRedirectUrl
         $baseUrl = $this->config->getApiBaseUrl();
 
         return $baseUrl . '/redirect?authToken=' . $verification->getAuthToken();
-
     }
 
     /**

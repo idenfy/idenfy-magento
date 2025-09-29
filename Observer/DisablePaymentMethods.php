@@ -14,7 +14,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 /**
  * Disables payment methods if the customer is not verified yet.
  */
-class DisablePaymentMethods  implements ObserverInterface
+class DisablePaymentMethods implements ObserverInterface
 {
     /** @var GetClientId */
     private GetClientId $getClientId;
