@@ -110,7 +110,6 @@ class GetAuthToken
                 [
                     RequestOptions::JSON => $payload
                 ]
-
             );
         } catch (GuzzleException $e) {
             $this->logger->error(sprintf('Unable to verify customer: %s', $e->getMessage()));
