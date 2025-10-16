@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Idenfy\CustomerVerification\Model;
 
-use Idenfy\customerVerification\Model\Action\NeedsVerification;
+use Idenfy\CustomerVerification\Model\Action\NeedsVerification;
 use Magento\Checkout\Model\ConfigProviderInterface;
 
 class ConfigProvider implements ConfigProviderInterface

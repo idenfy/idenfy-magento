@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Idenfy\customerVerification\Model\Action;
+namespace Idenfy\CustomerVerification\Model\Action;
 
 use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
 use Magento\Checkout\Model\Session as CheckoutSession;
@@ -17,6 +17,9 @@ class NeedsVerification
     /** @var GetClientId  */
     private GetClientId $getClientId;
 
+    /** @var VerificationRepositoryInterface  */
+    private VerificationRepositoryInterface $verificationRepository;
+
     /**
      * @param CheckoutSession $checkoutSession
      * @param GetClientId $getClientId
@@ -31,9 +34,6 @@ class NeedsVerification
         $this->getClientId = $getClientId;
         $this->verificationRepository = $verificationRepository;
     }
-
-    /** @var VerificationRepositoryInterface  */
-    private VerificationRepositoryInterface $verificationRepository;
 
     /**
      * @return bool
