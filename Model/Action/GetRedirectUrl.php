@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Idenfy\customerVerification\Model\Action;
+namespace Idenfy\CustomerVerification\Model\Action;
 
 use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
 use Idenfy\CustomerVerification\Model\Config;
