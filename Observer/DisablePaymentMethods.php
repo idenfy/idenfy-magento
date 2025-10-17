@@ -5,6 +5,7 @@ namespace idenfy\CustomerVerification\Observer;
 
 use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
 use Idenfy\CustomerVerification\Model\Action\GetClientId;
+use Idenfy\CustomerVerification\Model\Config;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
@@ -25,14 +26,19 @@ class DisablePaymentMethods implements ObserverInterface
     /** @var CheckoutSession  */
     private CheckoutSession $checkoutSession;
 
+    /** @var Config */
+    private Config $config;
+
     public function __construct(
         GetClientId $getClientId,
         VerificationRepositoryInterface $verificationRepository,
-        CheckoutSession $checkoutSession
+        CheckoutSession $checkoutSession,
+        Config $config
     ) {
         $this->getClientId = $getClientId;
         $this->verificationRepository = $verificationRepository;
         $this->checkoutSession = $checkoutSession;
+        $this->config = $config;
     }
 
     /**
@@ -43,6 +49,10 @@ class DisablePaymentMethods implements ObserverInterface
      */
     public function execute(Observer $observer): void
     {
+        if (!$this->config->isEnabled()) {
+            return;
+        }
+
         if (!$this->isCustomerVerified()) {
             $result = $observer->getEvent()->getResult();
             $result->setIsAvailable(false);

@@ -12,6 +12,7 @@ class Config
     public const CONFIG_PATH_API_KEY = 'idenfy/general/api_key';
     public const CONFIG_PATH_API_SECRET = 'idenfy/general/api_secret';
     public const CONFIG_PATH_API_BASE_URL = 'idenfy/general/api_base_url';
+    public const CONFIG_PATH_ENABLED = 'idenfy/general/enabled';
 
     /** @var ScopeConfigInterface  */
     private ScopeConfigInterface $scopeConfig;
@@ -46,5 +47,17 @@ class Config
     public function getApiBaseUrl(): string
     {
         return $this->scopeConfig->getValue(self::CONFIG_PATH_API_BASE_URL, ScopeInterface::SCOPE_WEBSITE);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isEnabled(): bool
+    {
+        if (!$this->scopeConfig->isSetFlag(self::CONFIG_PATH_ENABLED, ScopeInterface::SCOPE_WEBSITE)) {
+            return false;
+        }
+
+        return !empty($this->getApiKey()) && !empty($this->getApiSecret());
     }
 }

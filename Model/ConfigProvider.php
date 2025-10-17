@@ -11,9 +11,15 @@ class ConfigProvider implements ConfigProviderInterface
     /** @var NeedsVerification */
     private NeedsVerification $needsVerification;
 
-    public function __construct(NeedsVerification $needsVerification)
-    {
+    /** @var Config */
+    private Config $config;
+
+    public function __construct(
+        NeedsVerification $needsVerification,
+        Config $config
+    ) {
         $this->needsVerification = $needsVerification;
+        $this->config = $config;
     }
 
     /**
@@ -21,10 +27,13 @@ class ConfigProvider implements ConfigProviderInterface
      */
     public function getConfig()
     {
-        return [
-            'idenfy' => [
-                'needsVerification' => $this->needsVerification->execute()
-            ]
+        $config = [];
+
+        $config['idenfy'] = [
+            'isEnabled' => $this->config->isEnabled(),
+            'needsVerification' => $this->needsVerification->execute()
         ];
+
+        return $config;
     }
 }

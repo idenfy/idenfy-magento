@@ -12,6 +12,11 @@
             <resource>Idenfy_CustomerVerification::config</resource>
             <group id="general" translate="label" showInDefault="1" showInWebsite="1" showInStore="0" sortOrder="10">
                 <label>General</label>
+                <field id="enabled" translate="label" type="select" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Enable Module</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>idenfy/general/enabled</config_path>
+                </field>
                 <field id="api_key" translate="label tooltip" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>API Key</label>
                     <config_path>idenfy/general/api_key</config_path>

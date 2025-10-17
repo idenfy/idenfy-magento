@@ -6,8 +6,9 @@ define([
     'Magento_Ui/js/model/messageList',
     'Magento_Checkout/js/model/url-builder',
     'Magento_Checkout/js/model/full-screen-loader',
+    'Magento_Customer/js/customer-data',
     'mage/translate'
-], function ($, Component, ko, storage, messageList, urlBuilder, fullScreenLoader, $t) {
+], function ($, Component, ko, storage, messageList, urlBuilder, fullScreenLoader, customerData, $t) {
     'use strict';
 
     return Component.extend({
@@ -33,6 +34,15 @@ define([
                     }, 200)
                 }
             });
+
+            // Check if module is enabled or the credentials are present before proceeding
+            var checkoutConfig = window.checkoutConfig;
+
+            if (!checkoutConfig.idenfy || !checkoutConfig.idenfy.isEnabled) {
+                console.error('Idenfy module disabled or credentials missing');
+                this.shouldRender(false);
+                return;
+            }
 
             this.shouldVerify();
         },
