@@ -3,14 +3,15 @@ declare(strict_types=1);
 
 namespace Idenfy\CustomerVerification\Observer;
 
-use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
+use Idenfy\CustomerVerification\Model\Action\CheckCustomerVerification;
 use Idenfy\CustomerVerification\Model\Action\GetClientId;
 use Idenfy\CustomerVerification\Model\Config;
-use Magento\Checkout\Model\Session as CheckoutSession;
+use Magento\Framework\App\Area;
+use Magento\Framework\App\State;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Quote\Api\Data\CartInterface;
 
 /**
  * Disables payment methods if the customer is not verified yet.
@@ -20,25 +21,31 @@ class DisablePaymentMethods implements ObserverInterface
     /** @var GetClientId */
     private GetClientId $getClientId;
 
-    /** @var VerificationRepositoryInterface */
-    private VerificationRepositoryInterface $verificationRepository;
-
-    /** @var CheckoutSession  */
-    private CheckoutSession $checkoutSession;
+    /** @var CheckCustomerVerification */
+    private CheckCustomerVerification $checkCustomerVerification;
 
     /** @var Config */
     private Config $config;
 
+    /** @var State */
+    private State $appState;
+
+    /**
+     * @param GetClientId $getClientId
+     * @param CheckCustomerVerification $checkCustomerVerification
+     * @param Config $config
+     * @param State $appState
+     */
     public function __construct(
         GetClientId $getClientId,
-        VerificationRepositoryInterface $verificationRepository,
-        CheckoutSession $checkoutSession,
-        Config $config
+        CheckCustomerVerification $checkCustomerVerification,
+        Config $config,
+        State $appState
     ) {
         $this->getClientId = $getClientId;
-        $this->verificationRepository = $verificationRepository;
-        $this->checkoutSession = $checkoutSession;
+        $this->checkCustomerVerification = $checkCustomerVerification;
         $this->config = $config;
+        $this->appState = $appState;
     }
 
     /**
@@ -49,35 +56,58 @@ class DisablePaymentMethods implements ObserverInterface
      */
     public function execute(Observer $observer): void
     {
+        $event = $observer->getEvent();
+        $result = $event->getResult();
+
+        if (!$result || !$result->getData('is_available')) {
+            return;
+        }
+
+        // Orders created by an admin are not subject to customer verification
+        if ($this->isAdminArea()) {
+            return;
+        }
+
+        // Use the quote the payment method is evaluated for, not the session quote, so that API and
+        // multi-quote contexts are handled correctly. Without a quote there is nothing to verify.
+        $quote = $event->getQuote();
+        if (!$quote instanceof CartInterface) {
+            return;
+        }
+
         if (!$this->config->isEnabled()) {
             return;
         }
 
-        if (!$this->isCustomerVerified()) {
-            $result = $observer->getEvent()->getResult();
-            $result->setIsAvailable(false);
+        if (!$this->isCustomerVerified($quote)) {
+            $result->setData('is_available', false);
         }
+    }
+
+    /**
+     * @param CartInterface $quote
+     * @return bool
+     */
+    private function isCustomerVerified(CartInterface $quote): bool
+    {
+        $clientId = $this->getClientId->execute($quote);
+
+        if ($clientId === null) {
+            return false;
+        }
+
+        return $this->checkCustomerVerification->execute($clientId);
     }
 
     /**
      * @return bool
      */
-    private function isCustomerVerified(): bool
+    private function isAdminArea(): bool
     {
         try {
-            $quote = $this->checkoutSession->getQuote();
-        } catch (NoSuchEntityException|LocalizedException $e) {
-            return true;
-        }
-
-        $clientId = $this->getClientId->execute($quote);
-
-        try {
-            $verification = $this->verificationRepository->getByClientId($clientId);
-        } catch (NoSuchEntityException $e) {
+            return $this->appState->getAreaCode() === Area::AREA_ADMINHTML;
+        } catch (LocalizedException $e) {
             return false;
         }
-
-        return $verification->getIsVerified();
     }
 }

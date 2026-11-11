@@ -4,7 +4,7 @@
     <type name="Magento\Checkout\Model\CompositeConfigProvider">
         <arguments>
             <argument name="configProviders" xsi:type="array">
-                <item name="data_pass_checkout" xsi:type="object">Idenfy\CustomerVerification\Model\ConfigProvider</item>
+                <item name="idenfy_customer_verification" xsi:type="object">Idenfy\CustomerVerification\Model\ConfigProvider</item>
             </argument>
         </arguments>
     </type>

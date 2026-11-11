@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Idenfy\CustomerVerification\Model\Action;
 
+use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\RequestOptions;
 use Idenfy\CustomerVerification\Api\Data\VerificationInterface;
@@ -10,7 +11,6 @@ use Idenfy\CustomerVerification\Api\Data\VerificationInterfaceFactory;
 use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
 use Idenfy\CustomerVerification\Model\IdenfyClientFactory;
 use InvalidArgumentException;
-use Magento\Framework\Exception\AlreadyExistsException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Framework\UrlInterface;
@@ -20,6 +20,11 @@ use Psr\Log\LoggerInterface;
 
 class GetAuthToken
 {
+    /**
+     * Query parameter appended to the return URL so the checkout knows the customer comes back from Idenfy
+     */
+    public const RETURN_QUERY_PARAM = 'idenfy_return';
+
     /** @var IdenfyClientFactory  */
     private IdenfyClientFactory $idenfyClientFactory;
 
@@ -88,6 +93,11 @@ class GetAuthToken
     {
         $clientId = $this->getClientId->execute($quote);
 
+        if ($clientId === null) {
+            $this->logger->error('Unable to verify customer: the quote has no ID yet.');
+            return null;
+        }
+
         if ($this->checkCustomerVerification->execute($clientId)) {
             $this->logger->info(
                 sprintf('Verification for client ID %s already successful. Skipping verification.', $clientId)
@@ -117,24 +127,34 @@ class GetAuthToken
         }
 
         try {
-            $response = $this->jsonSerializer->unserialize($response->getBody()->getContents());
+            $responseData = $this->jsonSerializer->unserialize((string) $response->getBody());
         } catch (InvalidArgumentException $e) {
             $this->logger->error(sprintf('Unable to process Idenfy API response: %s', $e->getMessage()));
             return null;
         }
 
-        return $this->createVerificationRecord($response, $quote, $clientId, $payload);
+        if (!is_array($responseData)
+            || empty($responseData['authToken'])
+            || empty($responseData['scanRef'])
+            || !is_string($responseData['authToken'])
+            || !is_string($responseData['scanRef'])
+        ) {
+            $this->logger->error('Unable to process Idenfy API response: authToken or scanRef is missing.');
+            return null;
+        }
+
+        return $this->createVerificationRecord($responseData, $quote, $clientId, $payload);
     }
 
     /**
-     * @param mixed $response
+     * @param array $response
      * @param CartInterface $quote
      * @param string $clientId
      * @param array $payload
      * @return VerificationInterface|null
      */
     private function createVerificationRecord(
-        mixed $response,
+        array $response,
         CartInterface $quote,
         string $clientId,
         array $payload
@@ -147,12 +167,12 @@ class GetAuthToken
         $verification->setClientId($clientId);
         $verification->setAuthToken($response['authToken']);
         $verification->setScanReference($response['scanRef']);
-        $verification->setDigitString($response['digitString']);
-        $verification->setMessage($response['message']);
+        $verification->setDigitString(isset($response['digitString']) ? (string) $response['digitString'] : null);
+        $verification->setMessage(isset($response['message']) ? (string) $response['message'] : '');
 
         try {
             return $this->verificationRepository->save($verification);
-        } catch (AlreadyExistsException $e) {
+        } catch (Exception $e) {
             $this->logger->error(sprintf('Unable to store verification record: %s', $e->getMessage()));
             return null;
         }
@@ -164,7 +184,14 @@ class GetAuthToken
      */
     private function getPayload(string $clientId): array
     {
-        $redirectUrl = rtrim($this->urlBuilder->getUrl('checkout/#payment', ['_secure' => true]), '/');
+        $redirectUrl = $this->urlBuilder->getUrl(
+            'checkout',
+            [
+                '_secure' => true,
+                '_query' => [self::RETURN_QUERY_PARAM => 1],
+                '_fragment' => 'payment'
+            ]
+        );
         $webhookUrl = $this->serviceUrlBuilder->evaluate(['path' => '/idenfy/process-verification']);
 
         return [

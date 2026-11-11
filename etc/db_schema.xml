@@ -26,5 +26,12 @@
         <index referenceId="IDENFY_VERIFICATION_ENTITY_ID" indexType="btree">
             <column name="entity_id"/>
         </index>
+        <index referenceId="IDENFY_VERIFICATION_CLIENT_ID" indexType="btree">
+            <column name="client_id"/>
+        </index>
+        <index referenceId="IDENFY_VERIFICATION_CLIENT_ID_SCAN_REFERENCE" indexType="fulltext">
+            <column name="client_id"/>
+            <column name="scan_reference"/>
+        </index>
     </table>
 </schema>

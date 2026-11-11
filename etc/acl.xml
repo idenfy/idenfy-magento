@@ -4,7 +4,9 @@
     <acl>
         <resources>
             <resource id="Magento_Backend::admin">
-                <resource id="Idenfy_CustomerVerification::listing" title="Idenfy Verification Overview"/>
+                <resource id="Idenfy_CustomerVerification::idenfy_management" title="Idenfy" sortOrder="50">
+                    <resource id="Idenfy_CustomerVerification::listing" title="Idenfy Verification Overview"/>
+                </resource>
                 <resource id="Magento_Backend::stores">
                     <resource id="Magento_Backend::stores_settings">
                         <resource id="Magento_Config::config">

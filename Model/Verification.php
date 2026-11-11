@@ -47,7 +47,7 @@ class Verification extends AbstractModel implements VerificationInterface
      */
     public function getAuthToken(): string
     {
-        return $this->getData(self::AUTH_TOKEN);
+        return (string) $this->getData(self::AUTH_TOKEN);
     }
 
     /**
@@ -64,7 +64,7 @@ class Verification extends AbstractModel implements VerificationInterface
      */
     public function getScanReference(): string
     {
-        return $this->getData(self::SCAN_REFERENCE);
+        return (string) $this->getData(self::SCAN_REFERENCE);
     }
 
     /**
@@ -81,7 +81,7 @@ class Verification extends AbstractModel implements VerificationInterface
      */
     public function getClientId(): string
     {
-        return $this->getData(self::CLIENT_ID);
+        return (string) $this->getData(self::CLIENT_ID);
     }
 
     /**
@@ -115,7 +115,7 @@ class Verification extends AbstractModel implements VerificationInterface
      */
     public function getVerificationData(): string
     {
-        return $this->getData(self::VERIFICATION_DATA);
+        return (string) $this->getData(self::VERIFICATION_DATA);
     }
 
     /**
@@ -132,7 +132,7 @@ class Verification extends AbstractModel implements VerificationInterface
      */
     public function getMessage(): string
     {
-        return $this->getData(self::MESSAGE);
+        return (string) $this->getData(self::MESSAGE);
     }
 
     /**

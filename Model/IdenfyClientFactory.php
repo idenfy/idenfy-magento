@@ -9,6 +9,12 @@ use Magento\Framework\Exception\LocalizedException;
 
 class IdenfyClientFactory
 {
+    /** Seconds to wait for a connection to the Idenfy API */
+    private const CONNECT_TIMEOUT = 10;
+
+    /** Seconds to wait for a complete response from the Idenfy API */
+    private const TIMEOUT = 30;
+
     /** @var GuzzleClientFactory */
     private GuzzleClientFactory $guzzleClientFactory;
 
@@ -41,7 +47,10 @@ class IdenfyClientFactory
         }
 
         $config = [
-            'base_uri' => rtrim($this->config->getApiBaseUrl(), '/') . '/',
+            'base_uri' => $this->config->getApiBaseUrl() . '/',
+            // Never let a slow or unreachable Idenfy API block a checkout request indefinitely
+            'connect_timeout' => self::CONNECT_TIMEOUT,
+            'timeout' => self::TIMEOUT,
             'headers' => [
                 'Cache-Control' => 'nocache',
                 'Content-Type' => 'application/json',

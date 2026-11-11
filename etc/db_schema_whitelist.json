@@ -12,7 +12,9 @@
             "message": true
         },
         "index": {
-            "IDENFY_VERIFICATION_ENTITY_ID": true
+            "IDENFY_VERIFICATION_ENTITY_ID": true,
+            "IDENFY_VERIFICATION_CLIENT_ID": true,
+            "IDENFY_VERIFICATION_CLIENT_ID_SCAN_REFERENCE": true
         },
         "constraint": {
             "PRIMARY": true,

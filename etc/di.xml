@@ -6,20 +6,18 @@
     <preference for="Idenfy\CustomerVerification\Api\VerificationRepositoryInterface"
                 type="Idenfy\CustomerVerification\Model\VerificationRepository"/>
 
-    <virtualType name="VerificationDataProvider"
+    <virtualType name="IdenfyVerificationGridSearchResult"
                  type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
-            <argument name="resourceModel" xsi:type="string">
-                Idenfy\CustomerVerification\Model\ResourceModel\Verification\Collection
-            </argument>
             <argument name="mainTable" xsi:type="string">idenfy_verification</argument>
+            <argument name="resourceModel" xsi:type="string">Idenfy\CustomerVerification\Model\ResourceModel\Verification</argument>
         </arguments>
     </virtualType>
 
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
         <arguments>
             <argument name="collections"  xsi:type="array">
-                <item xsi:type="string" name="idenfy_customer_verifications_data_source">VerificationDataProvider</item>
+                <item xsi:type="string" name="idenfy_customer_verifications_data_source">IdenfyVerificationGridSearchResult</item>
             </argument>
         </arguments>
     </type>
@@ -44,6 +42,11 @@
         </arguments>
     </type>
     <type name="Idenfy\CustomerVerification\Model\Action\ProcessVerification">
+        <arguments>
+            <argument name="logger" xsi:type="object">IdenfyLogger</argument>
+        </arguments>
+    </type>
+    <type name="Idenfy\CustomerVerification\Model\Action\GetRedirectUrl">
         <arguments>
             <argument name="logger" xsi:type="object">IdenfyLogger</argument>
         </arguments>

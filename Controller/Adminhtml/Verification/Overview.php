@@ -1,13 +1,12 @@
 <?php
+declare(strict_types=1);
 
 namespace Idenfy\CustomerVerification\Controller\Adminhtml\Verification;
 
 use Magento\Backend\App\Action;
+use Magento\Backend\Model\View\Result\Page;
 use Magento\Framework\App\Action\HttpGetActionInterface;
-use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\Controller\ResultFactory;
-use Magento\Framework\Controller\ResultInterface;
-use Magento\Framework\Exception\NotFoundException;
 
 class Overview extends Action implements HttpGetActionInterface
 {
@@ -19,10 +18,15 @@ class Overview extends Action implements HttpGetActionInterface
     /**
      * Execute action based on request and return result
      *
-     * @return \Magento\Framework\View\Result\Page|(\Magento\Framework\View\Result\Page&ResultInterface)|ResultInterface
+     * @return Page
      */
     public function execute()
     {
-        return $this->resultFactory->create(ResultFactory::TYPE_PAGE);
+        /** @var Page $resultPage */
+        $resultPage = $this->resultFactory->create(ResultFactory::TYPE_PAGE);
+        $resultPage->setActiveMenu(self::ADMIN_RESOURCE);
+        $resultPage->getConfig()->getTitle()->prepend(__('Idenfy Customer Verification'));
+
+        return $resultPage;
     }
 }

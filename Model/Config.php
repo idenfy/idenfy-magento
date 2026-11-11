@@ -13,6 +13,7 @@ class Config
     public const CONFIG_PATH_API_SECRET = 'idenfy/general/api_secret';
     public const CONFIG_PATH_API_BASE_URL = 'idenfy/general/api_base_url';
     public const CONFIG_PATH_ENABLED = 'idenfy/general/enabled';
+    public const CONFIG_PATH_WEBHOOK_SIGNING_KEY = 'idenfy/general/webhook_signing_key';
 
     /** @var ScopeConfigInterface  */
     private ScopeConfigInterface $scopeConfig;
@@ -30,7 +31,7 @@ class Config
      */
     public function getApiKey(): ?string
     {
-        return $this->scopeConfig->getValue(self::CONFIG_PATH_API_KEY, ScopeInterface::SCOPE_WEBSITE);
+        return $this->getStringValue(self::CONFIG_PATH_API_KEY);
     }
 
     /**
@@ -38,15 +39,27 @@ class Config
      */
     public function getApiSecret(): ?string
     {
-        return $this->scopeConfig->getValue(self::CONFIG_PATH_API_SECRET, ScopeInterface::SCOPE_WEBSITE);
+        return $this->getStringValue(self::CONFIG_PATH_API_SECRET);
     }
 
     /**
+     * Base URL of the Idenfy API, without a trailing slash
+     *
      * @return string
      */
     public function getApiBaseUrl(): string
     {
-        return $this->scopeConfig->getValue(self::CONFIG_PATH_API_BASE_URL, ScopeInterface::SCOPE_WEBSITE);
+        return rtrim((string) $this->getStringValue(self::CONFIG_PATH_API_BASE_URL), '/');
+    }
+
+    /**
+     * Signing key configured for the webhook in the Idenfy dashboard, if any
+     *
+     * @return string|null
+     */
+    public function getWebhookSigningKey(): ?string
+    {
+        return $this->getStringValue(self::CONFIG_PATH_WEBHOOK_SIGNING_KEY);
     }
 
     /**
@@ -58,6 +71,25 @@ class Config
             return false;
         }
 
-        return !empty($this->getApiKey()) && !empty($this->getApiSecret());
+        return $this->getApiKey() !== null && $this->getApiSecret() !== null;
+    }
+
+    /**
+     * Read a website scoped config value, normalising empty values to null
+     *
+     * @param string $path
+     * @return string|null
+     */
+    private function getStringValue(string $path): ?string
+    {
+        $value = $this->scopeConfig->getValue($path, ScopeInterface::SCOPE_WEBSITE);
+
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 }

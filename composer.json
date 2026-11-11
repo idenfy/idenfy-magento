@@ -4,12 +4,13 @@
     "description": "Plugin which is used to verify customers using the Idenfy API",
     "type": "magento2-module",
     "require": {
+        "guzzlehttp/guzzle": "^6.3 || ^7.0",
         "magento/framework": ">=102.0.3",
-        "magento/module-checkout": ">=100.3.3",
-        "magento/module-customer": ">=100.3.3",
         "magento/module-backend": ">=100.3.3",
         "magento/module-catalog": ">=100.3.3",
+        "magento/module-checkout": ">=100.3.3",
         "magento/module-config": ">=100.3.3",
+        "magento/module-customer": ">=100.3.3",
         "magento/module-eav": ">=100.3.3",
         "magento/module-payment": ">=100.3.3",
         "magento/module-quote": ">=100.3.3",
@@ -19,6 +20,7 @@
         "magento/module-tax": ">=100.3.3",
         "magento/module-ui": ">=100.3.3",
         "magento/module-vault": ">=100.3.3",
+        "magento/module-webapi": ">=100.3.3",
         "php": ">=7.4"
     },
     "license": [

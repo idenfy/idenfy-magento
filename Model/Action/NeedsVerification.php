@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Idenfy\CustomerVerification\Model\Action;
 
-use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
+use Idenfy\CustomerVerification\Model\Config;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -17,29 +17,41 @@ class NeedsVerification
     /** @var GetClientId  */
     private GetClientId $getClientId;
 
-    /** @var VerificationRepositoryInterface  */
-    private VerificationRepositoryInterface $verificationRepository;
+    /** @var CheckCustomerVerification  */
+    private CheckCustomerVerification $checkCustomerVerification;
+
+    /** @var Config  */
+    private Config $config;
 
     /**
-     * @param CheckoutSession $checkoutSession
      * @param GetClientId $getClientId
-     * @param VerificationRepositoryInterface $verificationRepository
+     * @param CheckCustomerVerification $checkCustomerVerification
+     * @param CheckoutSession $checkoutSession
+     * @param Config $config
      */
     public function __construct(
         GetClientId $getClientId,
-        VerificationRepositoryInterface $verificationRepository,
-        CheckoutSession $checkoutSession
+        CheckCustomerVerification $checkCustomerVerification,
+        CheckoutSession $checkoutSession,
+        Config $config
     ) {
         $this->checkoutSession = $checkoutSession;
         $this->getClientId = $getClientId;
-        $this->verificationRepository = $verificationRepository;
+        $this->checkCustomerVerification = $checkCustomerVerification;
+        $this->config = $config;
     }
 
     /**
+     * Whether the customer of the current checkout session still has to verify with Idenfy
+     *
      * @return bool
      */
     public function execute(): bool
     {
+        if (!$this->config->isEnabled()) {
+            return false;
+        }
+
         try {
             $quote = $this->checkoutSession->getQuote();
         } catch (NoSuchEntityException|LocalizedException $e) {
@@ -47,15 +59,10 @@ class NeedsVerification
         }
 
         $clientId = $this->getClientId->execute($quote);
-
-        try {
-            $verification = $this->verificationRepository->getByClientId($clientId);
-        } catch (NoSuchEntityException $e) {
+        if ($clientId === null) {
             return true;
         }
 
-        $isVerified = $verification->getIsVerified();
-
-        return !$isVerified;
+        return !$this->checkCustomerVerification->execute($clientId);
     }
 }

@@ -6,94 +6,126 @@ define([
     'Magento_Ui/js/model/messageList',
     'Magento_Checkout/js/model/url-builder',
     'Magento_Checkout/js/model/full-screen-loader',
+    'Magento_Checkout/js/action/get-payment-information',
     'mage/translate'
-], function ($, Component, ko, storage, messageList, urlBuilder, fullScreenLoader, $t) {
+], function ($, Component, ko, storage, messageList, urlBuilder, fullScreenLoader, getPaymentInformation, $t) {
     'use strict';
+
+    /**
+     * Query parameter Idenfy redirects back with (see GetAuthToken::RETURN_QUERY_PARAM)
+     */
+    var RETURN_QUERY_PARAM = 'idenfy_return';
 
     return Component.extend({
 
         defaults: {
             template: 'Idenfy_CustomerVerification/verify-customer',
-            shouldRender: ko.observable()
+            // How often and how long to re-check the status after returning from Idenfy,
+            // as the webhook with the result can arrive a few seconds after the redirect
+            returnPollInterval: 3000,
+            returnPollAttempts: 10
         },
 
         /**
-         * Initialze the component
+         * Initialize the component
          */
-        initialize: function() {
+        initialize: function () {
             this._super();
 
-            this.shouldRender.subscribe(function(shouldRender) {
-                if (!shouldRender) {
-                    const hideIdenfyContainer = setInterval(function () {
-                        if ($('#idenfy-verification').length > 0) {
-                            $('#idenfy-verification').hide();
-                            clearInterval(hideIdenfyContainer);
-                        }
-                    }, 200)
-                }
-            });
+            this.shouldRender = ko.observable(false);
+            this.isCheckingStatus = ko.observable(false);
 
-            // Check if module is enabled or the credentials are present before proceeding
-            var checkoutConfig = window.checkoutConfig;
+            var idenfyConfig = window.checkoutConfig ? window.checkoutConfig.idenfy : null;
 
-            if (!checkoutConfig.idenfy || !checkoutConfig.idenfy.isEnabled) {
-                console.error('Idenfy module disabled or credentials missing');
-                this.shouldRender(false);
-                return;
+            // The module is disabled or the API credentials are missing: nothing to do
+            if (!idenfyConfig || !idenfyConfig.isEnabled) {
+                return this;
             }
 
-            this.shouldVerify();
+            this.shouldVerify(this.isReturningFromIdenfy() ? this.returnPollAttempts : 0);
+
+            return this;
         },
+
+        /**
+         * @returns {Boolean}
+         */
+        isReturningFromIdenfy: function () {
+            return new RegExp('[?&]' + RETURN_QUERY_PARAM + '=').test(window.location.search);
+        },
+
         /**
          * Check if the customer should still verify
+         *
+         * @param {Number} remainingAttempts - re-checks left while waiting for the webhook
          */
-        shouldVerify: function () {
-            let self = this,
-                status = undefined,
-                serviceUrl = urlBuilder.createUrl('/idenfy/needs-verification', {});
+        shouldVerify: function (remainingAttempts) {
+            var self = this,
+                serviceUrl = urlBuilder.createUrl('/idenfy/needs-verification', {}),
+                isFirstCheck = !this.isCheckingStatus();
 
-            fullScreenLoader.startLoader();
+            if (isFirstCheck) {
+                fullScreenLoader.startLoader();
+            }
+
             storage.post(
                 serviceUrl
             ).fail(
-                function (response) {
+                function () {
+                    self.isCheckingStatus(false);
                     self.shouldRender(false);
                 }
             ).done(
-                function (response) {
-                    self.shouldRender(response);
+                function (needsVerification) {
+                    if (needsVerification && remainingAttempts > 0) {
+                        self.isCheckingStatus(true);
+                        setTimeout(function () {
+                            self.shouldVerify(remainingAttempts - 1);
+                        }, self.returnPollInterval);
+
+                        return;
+                    }
+
+                    if (!needsVerification && self.isCheckingStatus()) {
+                        // Verified while on the page: reload the payment methods that were disabled
+                        getPaymentInformation();
+                    }
+
+                    self.isCheckingStatus(false);
+                    self.shouldRender(!!needsVerification);
                 }
             ).always(
                 function () {
-                    fullScreenLoader.stopLoader();
+                    if (isFirstCheck) {
+                        fullScreenLoader.stopLoader();
+                    }
                 }
             );
         },
 
         /**
-         * Trigger a redirect to the Idenfy platform to preform customer verification
+         * Trigger a redirect to the Idenfy platform to perform customer verification
          */
         idenfyRedirect: function () {
+            var serviceUrl = urlBuilder.createUrl('/idenfy/get-redirect-url', {});
 
-            let serviceUrl = urlBuilder.createUrl('/idenfy/get-redirect-url', {});
             fullScreenLoader.startLoader();
 
             storage.post(
                 serviceUrl
             ).fail(
                 function (response) {
-                    messageList.addErrorMessage(
-                        $t('Something went wrong with your request. Please try again later.')
-                    );
+                    var message = response && response.responseJSON && response.responseJSON.message
+                        ? response.responseJSON.message
+                        : $t('Something went wrong with your request. Please try again later.');
+
+                    messageList.addErrorMessage({message: message});
+                    fullScreenLoader.stopLoader();
                 }
             ).done(
-                function (response) {
-                    window.location.replace(response);
-                }
-            ).always(
-                function () {
-                    fullScreenLoader.stopLoader();
+                function (redirectUrl) {
+                    // Keep the loader running while the browser navigates away
+                    window.location.replace(redirectUrl);
                 }
             );
         }

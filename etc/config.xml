@@ -4,7 +4,11 @@
     <default>
         <idenfy>
             <general>
+                <!-- Enabled by default so upgrades from 1.0.x keep enforcing verification.
+                     The module stays inactive until an API key and secret are configured. -->
+                <enabled>1</enabled>
                 <api_secret backend_model="Magento\Config\Model\Config\Backend\Encrypted"/>
+                <webhook_signing_key backend_model="Magento\Config\Model\Config\Backend\Encrypted"/>
                 <api_base_url>https://ivs.idenfy.com/api/v2</api_base_url>
             </general>
         </idenfy>
