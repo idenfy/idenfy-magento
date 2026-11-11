@@ -6,9 +6,8 @@ define([
     'Magento_Ui/js/model/messageList',
     'Magento_Checkout/js/model/url-builder',
     'Magento_Checkout/js/model/full-screen-loader',
-    'Magento_Customer/js/customer-data',
     'mage/translate'
-], function ($, Component, ko, storage, messageList, urlBuilder, fullScreenLoader, customerData, $t) {
+], function ($, Component, ko, storage, messageList, urlBuilder, fullScreenLoader, $t) {
     'use strict';
 
     return Component.extend({

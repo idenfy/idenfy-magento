@@ -19,7 +19,7 @@
         "magento/module-tax": ">=100.3.3",
         "magento/module-ui": ">=100.3.3",
         "magento/module-vault": ">=100.3.3",
-        "php": ">=7.3"
+        "php": ">=7.4"
     },
     "license": [
         "Massachusetts Institute of Technology License (MITL)"
