@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace idenfy\CustomerVerification\Observer;
+namespace Idenfy\CustomerVerification\Observer;
 
 use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
 use Idenfy\CustomerVerification\Model\Action\GetClientId;
