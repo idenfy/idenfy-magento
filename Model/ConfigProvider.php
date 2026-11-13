@@ -3,22 +3,30 @@ declare(strict_types=1);
 
 namespace Idenfy\CustomerVerification\Model;
 
-use Idenfy\CustomerVerification\Model\Action\NeedsVerification;
+use Idenfy\CustomerVerification\Model\Action\GetVerificationStatus;
 use Magento\Checkout\Model\ConfigProviderInterface;
 
+/**
+ * Exposes the verification state to the checkout as window.checkoutConfig.idenfy, so the verification modal does not
+ * have to request it when the checkout loads
+ */
 class ConfigProvider implements ConfigProviderInterface
 {
-    /** @var NeedsVerification */
-    private NeedsVerification $needsVerification;
+    /** @var GetVerificationStatus */
+    private GetVerificationStatus $getVerificationStatus;
 
     /** @var Config */
     private Config $config;
 
+    /**
+     * @param GetVerificationStatus $getVerificationStatus
+     * @param Config $config
+     */
     public function __construct(
-        NeedsVerification $needsVerification,
+        GetVerificationStatus $getVerificationStatus,
         Config $config
     ) {
-        $this->needsVerification = $needsVerification;
+        $this->getVerificationStatus = $getVerificationStatus;
         $this->config = $config;
     }
 
@@ -27,13 +35,15 @@ class ConfigProvider implements ConfigProviderInterface
      */
     public function getConfig()
     {
-        $config = [];
+        $isEnabled = $this->config->isEnabled();
+        $status = $isEnabled ? $this->getVerificationStatus->execute() : GetVerificationStatus::NOT_REQUIRED;
 
-        $config['idenfy'] = [
-            'isEnabled' => $this->config->isEnabled(),
-            'needsVerification' => $this->needsVerification->execute()
+        return [
+            'idenfy' => [
+                'isEnabled' => $isEnabled,
+                'status' => $status,
+                'needsVerification' => in_array($status, GetVerificationStatus::BLOCKING_STATUSES, true),
+            ]
         ];
-
-        return $config;
     }
 }

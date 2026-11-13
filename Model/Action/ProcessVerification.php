@@ -4,8 +4,10 @@ declare(strict_types=1);
 namespace Idenfy\CustomerVerification\Model\Action;
 
 use Exception;
+use Idenfy\CustomerVerification\Api\Data\VerificationInterface;
 use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
 use Idenfy\CustomerVerification\Model\Config;
+use Idenfy\CustomerVerification\Model\Verification;
 use InvalidArgumentException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Serialize\Serializer\Json;
@@ -139,22 +141,24 @@ class ProcessVerification
                 ),
                 self::LOGGER_CONTEXT
             );
+
+            // The customer finished the flow and a manual review follows. Only mark sessions that are still open,
+            // so a late preliminary webhook can never overwrite a final result.
+            if (!$verification->getIsVerified()
+                && in_array($verification->getStatus(), [null, VerificationInterface::STATUS_PENDING], true)
+            ) {
+                $verification->setStatus(VerificationInterface::STATUS_REVIEWING);
+                $this->saveVerification($verification, $clientId);
+            }
+
             return $this->result('OK');
         }
 
         $isVerificationApproved = $overallStatus === self::VERIFICATION_SUCCESS_STATUS;
         $verification->setIsVerified($isVerificationApproved);
+        $verification->setStatus($this->normaliseStatus($overallStatus));
 
-        try {
-            $this->verificationRepository->save($verification);
-        } catch (Exception $e) {
-            $this->logger->error(
-                sprintf('Unable to store webhook result for clientID %s: %s', $clientId, $e->getMessage()),
-                self::LOGGER_CONTEXT
-            );
-            // Let Idenfy retry the delivery
-            throw new WebapiException(__('Unable to process the webhook.'), 0, WebapiException::HTTP_INTERNAL_ERROR);
-        }
+        $this->saveVerification($verification, $clientId);
 
         $this->logger->notice(
             sprintf(
@@ -196,6 +200,39 @@ class ProcessVerification
             $this->logger->error('Rejected webhook with a missing or invalid Idenfy-Signature header', self::LOGGER_CONTEXT);
             throw new WebapiException(__('Invalid signature.'), 0, WebapiException::HTTP_UNAUTHORIZED);
         }
+    }
+
+    /**
+     * @param Verification $verification
+     * @param string $clientId
+     * @return void
+     * @throws WebapiException
+     */
+    private function saveVerification(Verification $verification, string $clientId): void
+    {
+        try {
+            $this->verificationRepository->save($verification);
+        } catch (Exception $e) {
+            $this->logger->error(
+                sprintf('Unable to store webhook result for clientID %s: %s', $clientId, $e->getMessage()),
+                self::LOGGER_CONTEXT
+            );
+            // Let Idenfy retry the delivery
+            throw new WebapiException(__('Unable to process the webhook.'), 0, WebapiException::HTTP_INTERNAL_ERROR);
+        }
+    }
+
+    /**
+     * Overall status as stored in the status column, e.g. APPROVED, DENIED, SUSPECTED or EXPIRED
+     *
+     * @param string $overallStatus
+     * @return string
+     */
+    private function normaliseStatus(string $overallStatus): string
+    {
+        $status = substr((string) preg_replace('/[^A-Z_]/', '', strtoupper($overallStatus)), 0, 32);
+
+        return $status !== '' ? $status : 'UNKNOWN';
     }
 
     /**

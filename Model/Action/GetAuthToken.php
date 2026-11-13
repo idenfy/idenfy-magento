@@ -4,19 +4,24 @@ declare(strict_types=1);
 namespace Idenfy\CustomerVerification\Model\Action;
 
 use Exception;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\RequestOptions;
 use Idenfy\CustomerVerification\Api\Data\VerificationInterface;
 use Idenfy\CustomerVerification\Api\Data\VerificationInterfaceFactory;
 use Idenfy\CustomerVerification\Api\VerificationRepositoryInterface;
+use Idenfy\CustomerVerification\Model\Config;
 use Idenfy\CustomerVerification\Model\IdenfyClientFactory;
 use InvalidArgumentException;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Locale\ResolverInterface as LocaleResolver;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Framework\UrlInterface;
 use Magento\Quote\Api\Data\CartInterface;
 use Magento\Store\Model\Argument\Interpreter\ServiceUrl;
 use Psr\Log\LoggerInterface;
+use Psr\Http\Message\ResponseInterface;
 
 class GetAuthToken
 {
@@ -24,6 +29,22 @@ class GetAuthToken
      * Query parameter appended to the return URL so the checkout knows the customer comes back from Idenfy
      */
     public const RETURN_QUERY_PARAM = 'idenfy_return';
+
+    /**
+     * Languages of the Idenfy verification UI
+     *
+     * @see https://documentation.idenfy.com/resources/supported-languages
+     */
+    private const SUPPORTED_LOCALES = [
+        'en', 'es', 'fr', 'ru', 'de', 'it', 'pl', 'lt', 'lv', 'et', 'sv', 'cs', 'ro', 'hu', 'ja', 'bg', 'nl', 'pt',
+        'uk', 'sk', 'si', 'vi', 'th', 'hi', 'id', 'hr', 'da', 'fi', 'el', 'no', 'tr', 'sr', 'zh', 'zh_tw', 'ko',
+        'ar', 'fa',
+    ];
+
+    /**
+     * Magento languages whose Idenfy code differs from the ISO 639-1 code
+     */
+    private const LOCALE_ALIASES = ['sl' => 'si', 'nb' => 'no', 'nn' => 'no'];
 
     /** @var IdenfyClientFactory  */
     private IdenfyClientFactory $idenfyClientFactory;
@@ -49,6 +70,12 @@ class GetAuthToken
     /** @var ServiceUrl  */
     private ServiceUrl $serviceUrlBuilder;
 
+    /** @var Config  */
+    private Config $config;
+
+    /** @var LocaleResolver  */
+    private LocaleResolver $localeResolver;
+
     /** @var LoggerInterface  */
     private LoggerInterface $logger;
 
@@ -61,6 +88,8 @@ class GetAuthToken
      * @param GetClientId $getClientId
      * @param UrlInterface $urlBuilder
      * @param ServiceUrl $serviceUrlBuilder
+     * @param Config $config
+     * @param LocaleResolver $localeResolver
      * @param LoggerInterface $logger
      */
     public function __construct(
@@ -72,6 +101,8 @@ class GetAuthToken
         GetClientId $getClientId,
         UrlInterface $urlBuilder,
         ServiceUrl $serviceUrlBuilder,
+        Config $config,
+        LocaleResolver $localeResolver,
         LoggerInterface $logger
     ) {
         $this->idenfyClientFactory = $idenfyClientFactory;
@@ -82,14 +113,19 @@ class GetAuthToken
         $this->getClientId = $getClientId;
         $this->urlBuilder = $urlBuilder;
         $this->serviceUrlBuilder = $serviceUrlBuilder;
+        $this->config = $config;
+        $this->localeResolver = $localeResolver;
         $this->logger = $logger;
     }
 
     /**
+     * Create a new verification session with Idenfy and store it for the customer of the quote
+     *
      * @param CartInterface $quote
+     * @param string|null $returnUrl Page to return to after a redirect verification, validated by the caller
      * @return VerificationInterface|null
      */
-    public function execute(CartInterface $quote): ?VerificationInterface
+    public function execute(CartInterface $quote, ?string $returnUrl = null): ?VerificationInterface
     {
         $clientId = $this->getClientId->execute($quote);
 
@@ -112,15 +148,10 @@ class GetAuthToken
             return null;
         }
 
-        $payload = $this->getPayload($clientId);
+        $payload = $this->getPayload($clientId, $returnUrl);
 
         try {
-            $response = $idenfyClient->post(
-                'token',
-                [
-                    RequestOptions::JSON => $payload
-                ]
-            );
+            $response = $this->requestToken($idenfyClient, $payload);
         } catch (GuzzleException $e) {
             $this->logger->error(sprintf('Unable to verify customer: %s', $e->getMessage()));
             return null;
@@ -147,6 +178,36 @@ class GetAuthToken
     }
 
     /**
+     * Request a token, retrying once without the UI language should Idenfy reject it
+     *
+     * @param Client $idenfyClient
+     * @param array $payload Updated when the request is retried without the locale
+     * @return ResponseInterface
+     * @throws GuzzleException
+     */
+    private function requestToken(Client $idenfyClient, array &$payload): ResponseInterface
+    {
+        try {
+            return $idenfyClient->post('token', [RequestOptions::JSON => $payload]);
+        } catch (ClientException $e) {
+            if (!isset($payload['locale'])) {
+                throw $e;
+            }
+
+            $this->logger->warning(
+                sprintf(
+                    'Idenfy rejected the token request with locale "%s" (%s), retrying without it.',
+                    $payload['locale'],
+                    $e->getMessage()
+                )
+            );
+            unset($payload['locale']);
+
+            return $idenfyClient->post('token', [RequestOptions::JSON => $payload]);
+        }
+    }
+
+    /**
      * @param array $response
      * @param CartInterface $quote
      * @param string $clientId
@@ -169,6 +230,7 @@ class GetAuthToken
         $verification->setScanReference($response['scanRef']);
         $verification->setDigitString(isset($response['digitString']) ? (string) $response['digitString'] : null);
         $verification->setMessage(isset($response['message']) ? (string) $response['message'] : '');
+        $verification->setStatus(VerificationInterface::STATUS_PENDING);
 
         try {
             return $this->verificationRepository->save($verification);
@@ -180,26 +242,81 @@ class GetAuthToken
 
     /**
      * @param string $clientId
+     * @param string|null $returnUrl
      * @return array
      */
-    private function getPayload(string $clientId): array
+    private function getPayload(string $clientId, ?string $returnUrl): array
     {
-        $redirectUrl = $this->urlBuilder->getUrl(
-            'checkout',
-            [
-                '_secure' => true,
-                '_query' => [self::RETURN_QUERY_PARAM => 1],
-                '_fragment' => 'payment'
-            ]
-        );
-        $webhookUrl = $this->serviceUrlBuilder->evaluate(['path' => '/idenfy/process-verification']);
-
-        return [
+        $payload = [
             'clientId' => $clientId,
-            'successUrl' => $redirectUrl,
-            'errorUrl' => $redirectUrl,
-            'unverifiedUrl' => $redirectUrl,
-            'callbackUrl' => $webhookUrl
+            'callbackUrl' => $this->serviceUrlBuilder->evaluate(['path' => '/idenfy/process-verification']),
         ];
+
+        // Return URLs make the embedded UI navigate away inside the iFrame, so they are only sent for redirects.
+        // In the iFrame the result is reported to the checkout with a message event instead.
+        if (!$this->config->isIframeMode()) {
+            $redirectUrl = $this->addReturnParam($returnUrl ?? $this->getDefaultReturnUrl());
+            $payload['successUrl'] = $redirectUrl;
+            $payload['errorUrl'] = $redirectUrl;
+            $payload['unverifiedUrl'] = $redirectUrl;
+        }
+
+        $locale = $this->getLocale();
+        if ($locale !== null) {
+            $payload['locale'] = $locale;
+        }
+
+        $themeId = $this->config->getThemeId();
+        if ($themeId !== null) {
+            $payload['theme'] = $themeId;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @return string
+     */
+    private function getDefaultReturnUrl(): string
+    {
+        return $this->urlBuilder->getUrl('checkout', ['_secure' => true, '_fragment' => 'payment']);
+    }
+
+    /**
+     * Add the return marker to the query string, keeping a fragment such as #payment at the end
+     *
+     * @param string $url
+     * @return string
+     */
+    private function addReturnParam(string $url): string
+    {
+        $fragment = '';
+        $fragmentPosition = strpos($url, '#');
+
+        if ($fragmentPosition !== false) {
+            $fragment = substr($url, $fragmentPosition);
+            $url = substr($url, 0, $fragmentPosition);
+        }
+
+        return $url . (strpos($url, '?') === false ? '?' : '&') . self::RETURN_QUERY_PARAM . '=1' . $fragment;
+    }
+
+    /**
+     * Idenfy UI language matching the store view, or null to let Idenfy pick one
+     *
+     * @return string|null
+     */
+    private function getLocale(): ?string
+    {
+        $parts = explode('_', (string) $this->localeResolver->getLocale());
+        $language = strtolower($parts[0]);
+
+        if ($language === 'zh') {
+            return in_array('Hant', $parts, true) ? 'zh_tw' : 'zh';
+        }
+
+        $language = self::LOCALE_ALIASES[$language] ?? $language;
+
+        return in_array($language, self::SUPPORTED_LOCALES, true) ? $language : null;
     }
 }

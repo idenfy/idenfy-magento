@@ -51,4 +51,9 @@
             <argument name="logger" xsi:type="object">IdenfyLogger</argument>
         </arguments>
     </type>
+    <type name="Idenfy\CustomerVerification\Observer\PreventUnverifiedOrder">
+        <arguments>
+            <argument name="logger" xsi:type="object">IdenfyLogger</argument>
+        </arguments>
+    </type>
 </config>

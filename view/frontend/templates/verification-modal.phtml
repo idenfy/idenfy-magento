@@ -1,0 +1,96 @@
+<?php
+/**
+ * Verification modal shown on the checkout. States are switched by Idenfy_CustomerVerification/js/verification-modal.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+
+/** @var \Idenfy\CustomerVerification\ViewModel\VerificationModal|null $viewModel */
+$viewModel = $block->getData('view_model');
+
+if (!$viewModel || !$viewModel->isEnabled()) {
+    return;
+}
+
+$buttonClass = $viewModel->getButtonClass();
+?>
+<div id="idenfy-verification-modal" class="idenfy-verification" style="display: none;">
+    <div class="idenfy-verification__logo" data-role="branding">
+        <img src="<?= $escaper->escapeUrl($viewModel->getLogoUrl()) ?>" alt="iDenfy" width="56" height="56"/>
+    </div>
+
+    <div class="idenfy-verification__state" data-state="intro">
+        <h2 class="idenfy-verification__title"><?= $escaper->escapeHtml($viewModel->getTitle()) ?></h2>
+        <p class="idenfy-verification__text"><?= $escaper->escapeHtml($viewModel->getText()) ?></p>
+        <p class="idenfy-verification__notice" data-role="notice" hidden></p>
+        <div class="idenfy-verification__actions">
+            <button type="button" class="<?= $escaper->escapeHtmlAttr($buttonClass) ?>" data-action="start">
+                <span><?= $escaper->escapeHtml($viewModel->getButtonLabel()) ?></span>
+            </button>
+        </div>
+    </div>
+
+    <div class="idenfy-verification__state idenfy-verification__state--frame" data-state="frame" hidden>
+        <div class="idenfy-verification__frame" data-role="frame"></div>
+        <button type="button" class="action-link idenfy-verification__cancel" data-action="cancel">
+            <?= $escaper->escapeHtml(__('Cancel verification')) ?>
+        </button>
+    </div>
+
+    <div class="idenfy-verification__state" data-state="checking" hidden>
+        <div class="idenfy-verification__spinner" aria-hidden="true"></div>
+        <h2 class="idenfy-verification__title"><?= $escaper->escapeHtml(__('Confirming your verification')) ?></h2>
+        <p class="idenfy-verification__text"><?= $escaper->escapeHtml(__('This usually takes a few seconds.')) ?></p>
+    </div>
+
+    <div class="idenfy-verification__state" data-state="verified" hidden>
+        <div class="idenfy-verification__icon idenfy-verification__icon--success" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <h2 class="idenfy-verification__title"><?= $escaper->escapeHtml(__('You are verified')) ?></h2>
+        <p class="idenfy-verification__text"><?= $escaper->escapeHtml(__('Thank you! You can now complete your purchase.')) ?></p>
+    </div>
+
+    <div class="idenfy-verification__state" data-state="reviewing" hidden>
+        <h2 class="idenfy-verification__title"><?= $escaper->escapeHtml(__('Verification in review')) ?></h2>
+        <p class="idenfy-verification__text">
+            <?= $escaper->escapeHtml(__('Thank you! We are waiting for the final result of your verification. You can complete your purchase as soon as it is approved.')) ?>
+        </p>
+        <div class="idenfy-verification__actions">
+            <button type="button" class="action secondary" data-action="check">
+                <span><?= $escaper->escapeHtml(__('Check again')) ?></span>
+            </button>
+        </div>
+    </div>
+
+    <div class="idenfy-verification__state" data-state="retry" hidden>
+        <h2 class="idenfy-verification__title"><?= $escaper->escapeHtml(__('Verification not completed')) ?></h2>
+        <p class="idenfy-verification__text" data-role="retry-message"></p>
+        <div class="idenfy-verification__actions">
+            <button type="button" class="<?= $escaper->escapeHtmlAttr($buttonClass) ?>" data-action="restart">
+                <span><?= $escaper->escapeHtml(__('Try again')) ?></span>
+            </button>
+        </div>
+    </div>
+
+    <p class="idenfy-verification__error message error" role="alert" data-role="error" hidden></p>
+
+    <?php if (!$viewModel->isClosable()): ?>
+        <p class="idenfy-verification__back" data-role="back">
+            <a href="<?= $escaper->escapeUrl($viewModel->getCartUrl()) ?>"><?= $escaper->escapeHtml(__('Back to cart')) ?></a>
+        </p>
+    <?php endif; ?>
+
+    <div class="idenfy-verification__footer" data-role="branding">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <?= $escaper->escapeHtml(__('Secure identity verification by iDenfy')) ?>
+    </div>
+</div>
+<script type="text/x-magento-init">
+    {
+        "#idenfy-verification-modal": {
+            "Idenfy_CustomerVerification/js/verification-modal": <?= /* @noEscape */ $viewModel->getJsConfig() ?>
+        }
+    }
+</script>

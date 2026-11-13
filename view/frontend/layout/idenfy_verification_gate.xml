@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--
+    The verification modal. Included by the default checkout (checkout_index_index.xml) and added to the
+    "Additional Checkout Pages" configured in the admin panel. It works independently of the checkout's component tree.
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="before.body.end">
+            <block name="idenfy.verification.modal" template="Idenfy_CustomerVerification::verification-modal.phtml">
+                <arguments>
+                    <argument name="view_model" xsi:type="object">Idenfy\CustomerVerification\ViewModel\VerificationModal</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

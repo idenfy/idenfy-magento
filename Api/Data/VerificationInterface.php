@@ -17,6 +17,17 @@ interface VerificationInterface
     public const DIGIT_STRING = 'digit_string';
     public const VERIFICATION_DATA = 'verification_data';
     public const MESSAGE = 'message';
+    public const STATUS = 'status';
+    public const CREATED_AT = 'created_at';
+    public const UPDATED_AT = 'updated_at';
+
+    /**
+     * Statuses set by the module. Final results store the overall status received from Idenfy (APPROVED, DENIED,
+     * SUSPECTED, EXPIRED, ...).
+     */
+    public const STATUS_PENDING = 'PENDING';
+    public const STATUS_REVIEWING = 'REVIEWING';
+    public const STATUS_APPROVED = 'APPROVED';
 
     /**
      * @return int|null
@@ -105,4 +116,31 @@ interface VerificationInterface
      * @return void
      */
     public function setIsVerified(bool $isVerified): void;
+
+    /**
+     * PENDING, REVIEWING or the final overall status received from Idenfy. Null for records created before 1.2.0.
+     *
+     * @return string|null
+     */
+    public function getStatus(): ?string;
+
+    /**
+     * @param string|null $status
+     * @return void
+     */
+    public function setStatus(?string $status): void;
+
+    /**
+     * Creation time in UTC (Y-m-d H:i:s)
+     *
+     * @return string|null
+     */
+    public function getCreatedAt(): ?string;
+
+    /**
+     * Last update time in UTC (Y-m-d H:i:s)
+     *
+     * @return string|null
+     */
+    public function getUpdatedAt(): ?string;
 }

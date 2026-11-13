@@ -10,7 +10,19 @@
                 <api_secret backend_model="Magento\Config\Model\Config\Backend\Encrypted"/>
                 <webhook_signing_key backend_model="Magento\Config\Model\Config\Backend\Encrypted"/>
                 <api_base_url>https://ivs.idenfy.com/api/v2</api_base_url>
+                <!-- Origin of the verification UI embedded in the iFrame. When changed (custom UI domain),
+                     the new domain also has to be allowed as frame-src in the Content Security Policy. -->
+                <ui_base_url>https://ui.idenfy.com</ui_base_url>
+                <!-- Seconds during which an unfinished verification session is reused instead of creating a new,
+                     billable one. Matches Idenfy's default session length. 0 disables reuse. -->
+                <session_reuse_lifetime>1800</session_reuse_lifetime>
             </general>
+            <storefront>
+                <integration_mode>iframe</integration_mode>
+                <auto_open>1</auto_open>
+                <closable>1</closable>
+                <button_style>theme</button_style>
+            </storefront>
         </idenfy>
     </default>
 </config>

@@ -20,6 +20,12 @@
                 comment="Data which was used to retrieve the auth token"/>
         <column xsi:type="varchar" name="message" nullable="true"
                 comment="The response message received from the Idenfy API"/>
+        <column xsi:type="varchar" name="status" nullable="true" length="32"
+                comment="PENDING, REVIEWING or the final overall status received from Idenfy"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP"
+                comment="When the verification session was created"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP"
+                comment="When the verification record was last updated"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>

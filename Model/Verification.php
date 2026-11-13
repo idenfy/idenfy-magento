@@ -160,4 +160,40 @@ class Verification extends AbstractModel implements VerificationInterface
     {
         $this->setData(self::IS_VERIFIED, $isVerified);
     }
+
+    /**
+     * @return string|null
+     */
+    public function getStatus(): ?string
+    {
+        $status = $this->getData(self::STATUS);
+        return $status === null || $status === '' ? null : (string) $status;
+    }
+
+    /**
+     * @param string|null $status
+     * @return void
+     */
+    public function setStatus(?string $status): void
+    {
+        $this->setData(self::STATUS, $status);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getCreatedAt(): ?string
+    {
+        $createdAt = $this->getData(self::CREATED_AT);
+        return $createdAt ? (string) $createdAt : null;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getUpdatedAt(): ?string
+    {
+        $updatedAt = $this->getData(self::UPDATED_AT);
+        return $updatedAt ? (string) $updatedAt : null;
+    }
 }

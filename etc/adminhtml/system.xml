@@ -5,7 +5,7 @@
         <tab id="idenfy" translate="label" sortOrder="300">
             <label>Idenfy</label>
         </tab>
-        <section id="idenfy" translate="label" showInDefault="1" showInWebsite="1">
+        <section id="idenfy" translate="label" showInDefault="1" showInWebsite="1" showInStore="1">
             <class>separator-top</class>
             <label>API Configuration</label>
             <tab>idenfy</tab>
@@ -34,6 +34,90 @@
                     <config_path>idenfy/general/webhook_signing_key</config_path>
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                     <comment><![CDATA[Strongly recommended. Set the same value as the webhook <em>Signing key</em> in the Idenfy dashboard (Settings &rarr; System notifications). When set, webhooks without a valid <code>Idenfy-Signature</code> header are rejected. See <a href="https://documentation.idenfy.com/security/callback-signing" target="_blank">Callback Signing</a>.]]></comment>
+                </field>
+            </group>
+            <group id="storefront" translate="label" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="20">
+                <label>Checkout Experience</label>
+                <field id="integration_mode" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Integration Mode</label>
+                    <source_model>Idenfy\CustomerVerification\Model\Config\Source\IntegrationMode</source_model>
+                    <config_path>idenfy/storefront/integration_mode</config_path>
+                    <comment><![CDATA[<strong>Modal with embedded iFrame</strong> keeps the customer on your checkout. <strong>Redirect</strong> sends the customer to Idenfy and back to the page they came from.]]></comment>
+                </field>
+                <field id="auto_open" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Open Verification Automatically</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>idenfy/storefront/auto_open</config_path>
+                    <comment>When enabled, the verification modal opens as soon as an unverified customer reaches the checkout. Either way, it opens again when an unverified customer tries to place the order, and orders from unverified customers are rejected.</comment>
+                </field>
+                <field id="closable" translate="label comment" type="select" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Allow Closing the Modal</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>idenfy/storefront/closable</config_path>
+                    <comment>When disabled, the modal that opens on the checkout cannot be dismissed. The customer can only verify or go back to the cart.</comment>
+                    <depends>
+                        <field id="auto_open">1</field>
+                    </depends>
+                </field>
+                <field id="theme_id" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Idenfy Branding Theme ID</label>
+                    <config_path>idenfy/storefront/theme_id</config_path>
+                    <comment><![CDATA[Optional. ID of a KYC branding theme from the Idenfy dashboard (Settings &rarr; Branding) to style the verification screens. Leave empty to use your default theme.]]></comment>
+                </field>
+                <field id="modal_title" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Modal Title</label>
+                    <config_path>idenfy/storefront/modal_title</config_path>
+                    <comment>Leave empty to use the default, translated text "Verify your identity".</comment>
+                </field>
+                <field id="modal_text" translate="label comment" type="textarea" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Modal Text</label>
+                    <config_path>idenfy/storefront/modal_text</config_path>
+                    <comment>Leave empty to use the default, translated text.</comment>
+                </field>
+                <field id="button_label" translate="label comment" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Button Label</label>
+                    <config_path>idenfy/storefront/button_label</config_path>
+                    <comment>Leave empty to use the default, translated text "Start verification".</comment>
+                </field>
+                <field id="button_style" translate="label comment" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Button Style</label>
+                    <source_model>Idenfy\CustomerVerification\Model\Config\Source\ButtonStyle</source_model>
+                    <config_path>idenfy/storefront/button_style</config_path>
+                    <comment>"Theme default" uses your theme's primary button, so it matches the rest of the checkout.</comment>
+                </field>
+                <field id="button_background_color" translate="label comment" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Button Background Colour</label>
+                    <config_path>idenfy/storefront/button_background_color</config_path>
+                    <frontend_model>Idenfy\CustomerVerification\Block\Adminhtml\System\Config\ColorPicker</frontend_model>
+                    <backend_model>Idenfy\CustomerVerification\Model\Config\Backend\HexColor</backend_model>
+                    <comment>Hex colour, e.g. #1979C3. Leave empty to keep the theme colour.</comment>
+                    <depends>
+                        <field id="button_style">custom</field>
+                    </depends>
+                </field>
+                <field id="button_text_color" translate="label comment" type="text" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Button Text Colour</label>
+                    <config_path>idenfy/storefront/button_text_color</config_path>
+                    <frontend_model>Idenfy\CustomerVerification\Block\Adminhtml\System\Config\ColorPicker</frontend_model>
+                    <backend_model>Idenfy\CustomerVerification\Model\Config\Backend\HexColor</backend_model>
+                    <comment>Hex colour, e.g. #FFFFFF. Leave empty to keep the theme colour.</comment>
+                    <depends>
+                        <field id="button_style">custom</field>
+                    </depends>
+                </field>
+                <field id="button_border_radius" translate="label comment" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Button Corner Radius (px)</label>
+                    <config_path>idenfy/storefront/button_border_radius</config_path>
+                    <validate>validate-digits validate-digits-range digits-range-0-50</validate>
+                    <comment>0 to 50. Leave empty to keep the theme radius.</comment>
+                    <depends>
+                        <field id="button_style">custom</field>
+                    </depends>
+                </field>
+                <field id="additional_checkout_pages" translate="label comment" type="textarea" sortOrder="110" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Additional Checkout Pages</label>
+                    <config_path>idenfy/storefront/additional_checkout_pages</config_path>
+                    <comment><![CDATA[For one-step checkout extensions that run on their own page. Enter one full action name per line, e.g. <code>onestepcheckout_index_index</code>. The default Magento checkout is always included.]]></comment>
                 </field>
             </group>
         </section>
